@@ -1,0 +1,4 @@
+2023-09-25 16:12:30.416 xcodebuild[19092:254420] DVTCoreDeviceEnabledState: DVTCoreDeviceEnabledState_Disabled set via user default (DVTEnableCoreDevice=disabled)
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:tvOS Simulator, id:057CE093-A0EE-401A-B337-523719A8F7FA, OS:16.4, name:Apple TV 4K (3rd generation) }
+{ platform:tvOS Simulator, id:057CE093-A0EE-401A-B337-523719A8F7FA, OS:16.4, name:Apple TV 4K (3rd generation) }

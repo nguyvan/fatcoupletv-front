@@ -1,11 +1,18 @@
-import { View, Modal, TVEventControl, BackHandler, Alert } from 'react-native';
+import {
+    View,
+    Modal,
+    TVEventControl,
+    BackHandler,
+    Alert,
+    Platform,
+} from 'react-native';
 import { HomeProps } from '../types/props.type';
 import { FilmI, ReturnMoviesI } from '../dtos/movie.dto';
 import React from 'react';
 import { typeMovie } from '../constants/type-movie.constant';
 import Video from 'react-native-video';
 import RNExitApp from 'react-native-exit-app';
-import { hp } from '../utils/responsive';
+import { hp, wp } from '../utils/responsive';
 import TVNavbar from '../components/navbar/tv-navbar.component';
 import FilmInfo from '../components/film-info/film-info.component';
 import { getSession } from '../apis/session.api';
@@ -16,7 +23,7 @@ import ListFilm from '../components/list-film/list-film.component';
 import { useIsFocused } from '@react-navigation/native';
 
 export const HomeScreen = ({ navigation, route }: HomeProps) => {
-    const { currentEp, setCurrentEp } = React.useContext(AppContext);
+    const { setCurrentEp } = React.useContext(AppContext);
     const [films, setFilms] = React.useState<ReturnMoviesI[]>([]);
     const [type, setType] = React.useState<typeMovie>(typeMovie.MOVIE);
     const [idSelectedFilm, setIdSelectedFilm] = React.useState<string>('');
@@ -192,26 +199,76 @@ export const HomeScreen = ({ navigation, route }: HomeProps) => {
 
         return () => {
             BackHandler.removeEventListener('hardwareBackPress', exitApp);
-            TVEventControl.disableTVMenuKey();
             navigation.removeListener('blur', blur);
             navigation.removeListener('focus', focus);
+            TVEventControl.disableTVMenuKey();
         };
-    }, [navigation]);
+    }, [
+        navigation,
+        films,
+        type,
+        idSelectedFilm,
+        isOpen,
+        isTrailerPaused,
+        page,
+    ]);
 
     return (
-        <View className="flex-1 items-center justify-center bg-black">
-            <View className="w-full h-full">
+        <View
+            className={
+                Platform.OS === 'android'
+                    ? ''
+                    : 'flex-1 items-center justify-center bg-black'
+            }
+            style={
+                Platform.OS === 'android'
+                    ? {
+                          flex: 1,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'black',
+                      }
+                    : undefined
+            }>
+            <View
+                className={Platform.OS === 'android' ? '' : 'w-full h-full'}
+                style={
+                    Platform.OS === 'android'
+                        ? {
+                              width: '100%',
+                              height: '100%',
+                          }
+                        : undefined
+                }>
                 {selectedFilm && isFocused && isOpen ? (
                     <Video
                         ref={videoRef}
                         key={selectedFilm!.id}
                         source={{ uri: selectedFilm!.trailer, type: 'mp4' }}
                         resizeMode="cover"
-                        className="absolute top-0 bottom-0 left-0 right-0"
+                        className={
+                            Platform.OS === 'android'
+                                ? ''
+                                : 'absolute top-0 bottom-0 left-0 right-0'
+                        }
+                        style={
+                            Platform.OS === 'android'
+                                ? {
+                                      position: 'absolute',
+                                      top: 0,
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      width: wp(100),
+                                      height: hp(100),
+                                  }
+                                : undefined
+                        }
                         paused={isTrailerPaused}
                         repeat={true}
                         muted={false}
                         controls={false}
+                        fullscreen={true}
                     />
                 ) : (
                     <></>
@@ -222,8 +279,27 @@ export const HomeScreen = ({ navigation, route }: HomeProps) => {
                 visible={isOpen}
                 onRequestClose={() => RNExitApp.exitApp()}>
                 <View
-                    className="flex-col bg-transparent items-center justify-between absolute top-0 bottom-0 left-0 right-0"
-                    style={{ paddingBottom: hp(2) }}>
+                    className={
+                        Platform.OS === 'android'
+                            ? ''
+                            : 'flex-col bg-transparent items-center justify-between absolute top-0 bottom-0 left-0 right-0'
+                    }
+                    style={[
+                        { paddingBottom: hp(2) },
+                        Platform.OS === 'android'
+                            ? {
+                                  flexDirection: 'column',
+                                  backgroundColor: 'transparent',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  position: 'absolute',
+                                  top: 0,
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                              }
+                            : undefined,
+                    ]}>
                     <TVNavbar
                         type={type}
                         setType={setType}

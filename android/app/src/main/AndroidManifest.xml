@@ -1,5 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
@@ -7,13 +14,13 @@
       android:banner is used to display a rectangular banned launcher icon on Android TV devices.
       -->
     <application
-      android:name=".MainApplication"
-      android:label="@string/app_name"
-      android:banner="@drawable/tv_banner"
-      android:icon="@mipmap/ic_launcher"
-      android:roundIcon="@mipmap/ic_launcher_round"
-      android:allowBackup="false"
-      android:theme="@style/AppTheme">
+        android:name=".MainApplication"
+        android:allowBackup="false"
+        android:banner="@drawable/tv_banner"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/AppTheme">
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

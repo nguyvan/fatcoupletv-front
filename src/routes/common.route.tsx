@@ -82,31 +82,33 @@ const CommonRoute = () => {
     return (
         <NavigationContainer>
             <Stack.Navigator initialRouteName="Splash">
-                <Stack.Screen
-                    name="Splash"
-                    component={LazySplashScreen}
-                    options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                    name="Home"
-                    component={LazyHomeScreen}
-                    options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                    name="EpisodeSelection"
-                    component={LazyEpisodeSelectionScreen}
-                    options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                    name="VideoPlayer"
-                    component={LazyVideoPlayerScreen}
-                    options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                    name="Search"
-                    component={LazySearchScreen}
-                    options={{ headerShown: false }}
-                />
+                <Stack.Group screenOptions={{ presentation: 'containedModal' }}>
+                    <Stack.Screen
+                        name="Splash"
+                        component={LazySplashScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Home"
+                        component={LazyHomeScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="VideoPlayer"
+                        component={LazyVideoPlayerScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Search"
+                        component={LazySearchScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="EpisodeSelection"
+                        component={LazyEpisodeSelectionScreen}
+                        options={{ headerShown: false }}
+                    />
+                </Stack.Group>
             </Stack.Navigator>
         </NavigationContainer>
     );

@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     View,
     Text,
+    Platform,
 } from 'react-native';
 import Video, {
     OnLoadData,
@@ -23,6 +24,10 @@ import { hp, wp } from '../utils/responsive';
 import * as Progress from 'react-native-progress';
 import SVGBack from '../assets/svg/SvgBack';
 import SVGNext from '../assets/svg/SvgNext';
+import SVGControl from '../assets/svg/SvgControl';
+import SVGSkipForward from '../assets/svg/SvgSkipForward';
+import SVGSkipBackward from '../assets/svg/SvgSkipBackward';
+import SVGReturn from '../assets/svg/SvgReturn';
 
 export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
     const { currentEp, setCurrentEp } = React.useContext(AppContext);
@@ -107,10 +112,15 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
     const renderPlayPauseControl = () => {
         return (
             <TouchableOpacity
-                activeOpacity={1}
+                activeOpacity={Platform.OS === 'android' ? 0.2 : 1}
                 hasTVPreferredFocus={true}
                 onPress={() => setPause(!paused)}
-                tvParallaxProperties={{ magnification: 1.2 }}>
+                tvParallaxProperties={{ magnification: 1.2 }}
+                style={
+                    Platform.OS === 'android'
+                        ? { transform: [{ scale: 0.4 }] }
+                        : undefined
+                }>
                 {paused ? <SVGPlay /> : <SVGPause />}
             </TouchableOpacity>
         );
@@ -135,11 +145,52 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
         return (
             <View
                 className="flex-row justify-between items-center"
-                style={{ width: wp(12) }}>
+                style={{
+                    width: Platform.OS === 'android' ? wp(30) : wp(12),
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                }}>
+                {Platform.OS === 'android' ? (
+                    <TouchableOpacity
+                        tvParallaxProperties={{ magnification: 1.2 }}
+                        hasTVPreferredFocus={true}
+                        activeOpacity={Platform.OS === 'android' ? 0.2 : 1}
+                        onPress={async () => {
+                            player.current?.seek(currentTime - 10.0);
+                        }}
+                        style={
+                            Platform.OS === 'android'
+                                ? { transform: [{ scale: 0.3 }] }
+                                : undefined
+                        }>
+                        <SVGSkipBackward />
+                    </TouchableOpacity>
+                ) : (
+                    <></>
+                )}
+                {Platform.OS === 'android' ? (
+                    <TouchableOpacity
+                        tvParallaxProperties={{ magnification: 1.2 }}
+                        hasTVPreferredFocus={true}
+                        activeOpacity={Platform.OS === 'android' ? 0.2 : 1}
+                        onPress={async () => {
+                            player.current?.seek(currentTime + 10.0);
+                        }}
+                        style={
+                            Platform.OS === 'android'
+                                ? { transform: [{ scale: 0.3 }] }
+                                : undefined
+                        }>
+                        <SVGSkipForward />
+                    </TouchableOpacity>
+                ) : (
+                    <></>
+                )}
                 <TouchableOpacity
                     tvParallaxProperties={{ magnification: 1.2 }}
                     hasTVPreferredFocus={true}
-                    activeOpacity={1}
+                    activeOpacity={Platform.OS === 'android' ? 0.2 : 1}
                     onPress={async () => {
                         setStartFromBeginning(true);
                         setContinueWatchingTime(0);
@@ -150,14 +201,24 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
                             };
                             setCurrentEp!(data);
                         } else setPause(true);
-                    }}>
+                    }}
+                    style={
+                        Platform.OS === 'android'
+                            ? { transform: [{ scale: 0.4 }] }
+                            : undefined
+                    }>
                     <SVGBack />
                 </TouchableOpacity>
                 <TouchableOpacity
                     tvParallaxProperties={{ magnification: 1.2 }}
                     hasTVPreferredFocus={true}
-                    activeOpacity={1}
-                    onPress={goToNextEpisode}>
+                    activeOpacity={Platform.OS === 'android' ? 0.2 : 1}
+                    onPress={goToNextEpisode}
+                    style={
+                        Platform.OS === 'android'
+                            ? { transform: [{ scale: 0.4 }] }
+                            : undefined
+                    }>
                     <SVGNext />
                 </TouchableOpacity>
             </View>
@@ -167,26 +228,6 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
     React.useEffect(() => {
         fetchEpisodeData();
     }, [currentEp]);
-
-    React.useEffect(() => {
-        const blur = () => {
-            setPause(true);
-            setControlDisplayed(false);
-        };
-        navigation.addListener('blur', blur);
-
-        const focus = async () => {
-            setVideoEp(undefined);
-            setPause(false);
-            setControlDisplayed(true);
-        };
-        navigation.addListener('focus', focus);
-
-        return () => {
-            navigation.removeListener('blur', blur);
-            navigation.removeListener('focus', focus);
-        };
-    }, [navigation]);
 
     React.useEffect(() => {
         TVEventControl.enableTVMenuKey();
@@ -216,6 +257,32 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
             TVEventControl.disableTVMenuKey();
         };
     }, [currentTime, currentEp]);
+
+    React.useEffect(() => {
+        const blur = () => {
+            setPause(true);
+            setControlDisplayed(false);
+        };
+
+        const focus = () => {
+            setVideoEp(undefined);
+            setPause(false);
+            setControlDisplayed(true);
+        };
+        navigation.addListener('blur', blur);
+        navigation.addListener('focus', focus);
+        return () => {
+            navigation.removeListener('blur', blur);
+            navigation.removeListener('focus', focus);
+        };
+    }, [
+        navigation,
+        currentTime,
+        currentEp,
+        videoEp,
+        duration,
+        controlDisplayed,
+    ]);
 
     React.useEffect(() => {
         if (currentTime - currentTimeBackup >= 10.0) {
@@ -284,6 +351,23 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
                 ) : (
                     <></>
                 )}
+                {Platform.OS === 'android' ? (
+                    <TouchableOpacity
+                        style={{
+                            zIndex: 99,
+                            alignSelf: 'flex-end',
+                            position: 'absolute',
+                            top: '5%',
+                        }}
+                        onPress={() => {
+                            setCurrentTimeBackup(currentTime);
+                            setControlDisplayed(true);
+                        }}>
+                        <SVGControl />
+                    </TouchableOpacity>
+                ) : (
+                    <></>
+                )}
             </View>
             {currentEp && videoEp ? (
                 <Modal
@@ -293,29 +377,111 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
                     <View
                         className="bg-black/60 absolute top-0 bottom-0 left-0 right-0 items-center justify-between flex-col"
                         style={{ paddingHorizontal: '5%' }}>
-                        <Text
-                            className="text-white text-3xl font-bold"
-                            style={{
-                                marginTop: hp(2),
-                            }}>
-                            {`${currentEp.watchingFilm.name} : ${currentEp.currentEp}/${currentEp.watchingFilm.nb_episodes}`}
-                        </Text>
+                        {Platform.OS === 'android' ? (
+                            <View
+                                style={{
+                                    width: '70%',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    alignSelf: 'flex-start',
+                                }}>
+                                <TouchableOpacity
+                                    style={{
+                                        marginTop: hp(2),
+                                        transform: [{ scale: 0.4 }],
+                                        left: -32,
+                                    }}
+                                    onPress={() => {
+                                        if (navigation.canGoBack()) {
+                                            setPause(true);
+                                            setControlDisplayed(false);
+                                            navigation.goBack();
+                                        }
+                                    }}>
+                                    <SVGReturn />
+                                </TouchableOpacity>
+                                <Text
+                                    className="text-white text-3xl font-bold"
+                                    style={{
+                                        alignSelf: 'center',
+                                    }}>
+                                    {`${currentEp.watchingFilm.name} : ${currentEp.currentEp}/${currentEp.watchingFilm.nb_episodes}`}
+                                </Text>
+                            </View>
+                        ) : (
+                            <Text
+                                className="text-white text-3xl font-bold"
+                                style={{
+                                    marginTop: hp(2),
+                                }}>
+                                {`${currentEp.watchingFilm.name} : ${currentEp.currentEp}/${currentEp.watchingFilm.nb_episodes}`}
+                            </Text>
+                        )}
                         {skipEnding || skipIntro ? (
-                            <View className="w-full self-start h-3/4 justify-end items-end">
+                            <View
+                                className={
+                                    Platform.OS === 'android'
+                                        ? ''
+                                        : 'w-full self-start h-3/4 justify-end items-end'
+                                }
+                                style={
+                                    Platform.OS === 'android'
+                                        ? {
+                                              width: wp(90),
+                                              justifyContent: 'flex-end',
+                                              alignItems: 'flex-end',
+                                              height: hp(70),
+                                              alignSelf: 'center',
+                                          }
+                                        : undefined
+                                }>
                                 {skipEnding ? (
                                     <TouchableOpacity
                                         tvParallaxProperties={{
                                             magnification: 1.2,
                                         }}
                                         hasTVPreferredFocus={true}
-                                        activeOpacity={1}
+                                        activeOpacity={
+                                            Platform.OS === 'android' ? 0.2 : 1
+                                        }
                                         onPress={goToNextEpisode}
-                                        className="rounder-xl bg-black/70 items-center justify-center"
-                                        style={{
-                                            height: hp(5),
-                                            width: wp(10),
-                                        }}>
-                                        <Text className="text-white text-2xl font-bold">
+                                        className={
+                                            Platform.OS === 'android'
+                                                ? ''
+                                                : 'rounder-xl bg-black/70 items-center justify-center'
+                                        }
+                                        style={[
+                                            {
+                                                height: hp(5),
+                                                width: wp(10),
+                                            },
+                                            Platform.OS === 'android'
+                                                ? {
+                                                      borderRadius: wp(10),
+                                                      backgroundColor:
+                                                          'rgba(0,0,0,0.7)',
+                                                      alignItems: 'center',
+                                                      justifyContent: 'center',
+                                                  }
+                                                : undefined,
+                                        ]}>
+                                        <Text
+                                            className={
+                                                Platform.OS === 'android'
+                                                    ? ''
+                                                    : 'text-white text-2xl font-bold'
+                                            }
+                                            style={
+                                                Platform.OS === 'android'
+                                                    ? {
+                                                          color: 'white',
+                                                          fontSize: wp(1.2),
+                                                          fontWeight: 'bold',
+                                                          lineHeight: wp(1.5),
+                                                      }
+                                                    : undefined
+                                            }>
                                             Next episode
                                         </Text>
                                     </TouchableOpacity>
@@ -324,25 +490,55 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
                                 )}
                                 {skipIntro ? (
                                     <TouchableOpacity
-                                        activeOpacity={1}
+                                        activeOpacity={
+                                            Platform.OS === 'android' ? 0.2 : 1
+                                        }
                                         onPress={() => {
                                             if (player && player.current) {
-                                                player.current.seek(
-                                                    videoEp.skip_intro_time!,
-                                                );
+                                                player.current.seek(340);
                                             }
                                             setSkipIntro(false);
                                         }}
-                                        className="rounded-xl bg-black/70 items-center justify-center"
-                                        style={{
-                                            height: hp(5),
-                                            width: wp(10),
-                                        }}
+                                        className={
+                                            Platform.OS === 'android'
+                                                ? ''
+                                                : 'rounder-xl bg-black/70 items-center justify-center'
+                                        }
+                                        style={[
+                                            {
+                                                height: hp(5),
+                                                width: wp(10),
+                                            },
+                                            Platform.OS === 'android'
+                                                ? {
+                                                      borderRadius: wp(10),
+                                                      backgroundColor:
+                                                          'rgba(0,0,0,0.7)',
+                                                      alignItems: 'center',
+                                                      justifyContent: 'center',
+                                                  }
+                                                : undefined,
+                                        ]}
                                         tvParallaxProperties={{
                                             magnification: 1.2,
                                         }}
                                         hasTVPreferredFocus={true}>
-                                        <Text className="text-white text-2xl font-bold">
+                                        <Text
+                                            className={
+                                                Platform.OS === 'android'
+                                                    ? ''
+                                                    : 'text-white text-2xl font-bold'
+                                            }
+                                            style={
+                                                Platform.OS === 'android'
+                                                    ? {
+                                                          color: 'white',
+                                                          fontSize: wp(1.2),
+                                                          fontWeight: 'bold',
+                                                          lineHeight: wp(1.5),
+                                                      }
+                                                    : undefined
+                                            }>
                                             Skip intro
                                         </Text>
                                     </TouchableOpacity>
@@ -354,8 +550,23 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
                             <></>
                         )}
                         <View
-                            className="w-11/12 self-start h-2/12 justify-center"
-                            style={{ marginBottom: hp(2) }}>
+                            className={
+                                Platform.OS === 'android'
+                                    ? ''
+                                    : 'w-11/12 self-start h-2/12 justify-center'
+                            }
+                            style={[
+                                { marginBottom: hp(2) },
+                                Platform.OS === 'android'
+                                    ? {
+                                          width: wp(90),
+                                          alignSelf: 'center',
+                                          height: hp(10),
+                                          justifyContent: 'center',
+                                          alignItems: 'center',
+                                      }
+                                    : undefined,
+                            ]}>
                             <Progress.Bar
                                 progress={currentTime / duration}
                                 width={wp(90)}
@@ -363,12 +574,41 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
                                 unfilledColor="rgba(0,0,0,0.6)"
                             />
                             <View
-                                className="flex-row h-4/12 items-center justify-between"
-                                style={{
-                                    width: wp(90),
-                                    marginTop: hp(2),
-                                }}>
-                                <View className="flex-row justify-center">
+                                className={
+                                    Platform.OS === 'android'
+                                        ? ''
+                                        : 'flex-row h-4/12 items-center justify-between'
+                                }
+                                style={[
+                                    {
+                                        width: wp(90),
+                                        marginTop: hp(2),
+                                    },
+                                    Platform.OS === 'android'
+                                        ? {
+                                              flexDirection: 'row',
+                                              height: hp(2),
+                                              alignItems: 'center',
+                                              justifyContent: 'space-between',
+                                              left: -32,
+                                              marginTop: hp(5),
+                                          }
+                                        : undefined,
+                                ]}>
+                                <View
+                                    className={
+                                        Platform.OS === 'android'
+                                            ? ''
+                                            : 'flex-row justify-center'
+                                    }
+                                    style={
+                                        Platform.OS === 'android'
+                                            ? {
+                                                  flexDirection: 'row',
+                                                  justifyContent: 'center',
+                                              }
+                                            : undefined
+                                    }>
                                     {renderPlayPauseControl()}
                                     <View
                                         className="flex-row"
@@ -377,14 +617,31 @@ export const VideoPlayerScreen = ({ route, navigation }: VideoPlayerProps) => {
                                         }}>
                                         <Text
                                             className="self-center text-3xl text-white"
-                                            style={{ paddingHorizontal: 2 }}>
+                                            style={[
+                                                { paddingHorizontal: 2 },
+                                                Platform.OS === 'android'
+                                                    ? {
+                                                          alignSelf: 'center',
+                                                          fontSize: wp(2),
+                                                          color: 'white',
+                                                      }
+                                                    : undefined,
+                                            ]}>
                                             {`${displayTime(
                                                 currentTime,
                                             )}/${displayTime(duration)}`}
                                         </Text>
                                     </View>
                                 </View>
-                                <View className="flex-row justify-center items-center">
+                                <View
+                                    className="flex-row justify-center items-center"
+                                    style={
+                                        Platform.OS === 'android'
+                                            ? {
+                                                  right: -10,
+                                              }
+                                            : undefined
+                                    }>
                                     {renderNextBackControl()}
                                 </View>
                             </View>

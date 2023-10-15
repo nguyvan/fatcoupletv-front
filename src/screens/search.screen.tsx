@@ -7,6 +7,8 @@ import {
     Text,
     TouchableOpacity,
     View,
+    Platform,
+    BackHandler,
 } from 'react-native';
 import { FlatList, TextInput } from 'react-native';
 import { SVGSearchBlack } from '../assets/svg/SvgSearch';
@@ -16,18 +18,39 @@ import { getSession } from '../apis/session.api';
 import { getMovies } from '../apis/movies.api';
 import { LIMIT_MOVIE } from '../constants/limit.constant';
 import { hp, wp } from '../utils/responsive';
+import { useFocusEffect } from '@react-navigation/native';
+import SVGReturn from '../assets/svg/SvgReturn';
 
 const MovieItem = ({
     film,
     onClickPlayButton,
 }: {
-    film: ReturnMoviesI;
+    film: ReturnMoviesI | string;
     onClickPlayButton: (film: FilmI) => void;
 }) => {
+    if (typeof film === 'string') {
+        return (
+            <TouchableOpacity
+                className="w-1/4 flex-col items-center justify-center"
+                style={{
+                    flex: 1 / 4,
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 20,
+                    aspectRatio: 4 / 6,
+                }}
+            />
+        );
+    }
     return (
         <TouchableOpacity
             className="w-1/4 flex-col items-center justify-center"
             style={{
+                flex: 1 / 4,
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
                 marginRight: 20,
                 aspectRatio: 4 / 6,
             }}
@@ -45,10 +68,19 @@ const MovieItem = ({
             <Image
                 source={{ uri: film.cover }}
                 className="flex-1 w-full h-full"
+                style={{
+                    flex: 1,
+                    width: '100%',
+                    height: '100%',
+                }}
             />
             <Text
                 className="text-white text-3xl"
-                style={{ marginTop: hp(2) }}
+                style={{
+                    marginTop: hp(2),
+                    color: 'white',
+                    fontSize: Platform.OS === 'android' ? 12 : 30,
+                }}
                 numberOfLines={1}>
                 {film.name}
             </Text>
@@ -65,9 +97,13 @@ export const SearchScreen = ({ navigation }: any) => {
 
     const ref = React.useRef<FlatList>(null);
 
+    const blanks = React.useMemo(() => {
+        return Array.from({ length: 4 - (films.length % 4) }).map(i => 'blank');
+    }, [films]);
+
     const onClickPlayButton = async (film: FilmI) => {
-        const session = await getSession({ id_movie: film.id });
         try {
+            const session = await getSession({ id_movie: film.id });
             Alert.alert(
                 '',
                 `You are watching ${session.watchingFilm.name} episode ${session.currentEp}`,
@@ -94,7 +130,13 @@ export const SearchScreen = ({ navigation }: any) => {
                                 watchingFilm: film,
                                 currentEp: session.currentEp,
                             });
-                            navigation.navigate('EpisodeSelection');
+                            if (film.nb_episodes > 1) {
+                                navigation.navigate('EpisodeSelection');
+                            } else {
+                                navigation.navigate('VideoPlayer', {
+                                    continueWatchingTime: 0,
+                                });
+                            }
                         },
                     },
                 ],
@@ -113,6 +155,26 @@ export const SearchScreen = ({ navigation }: any) => {
             }
         }
     };
+
+    useFocusEffect(
+        React.useCallback(() => {
+            const onBackPress = () => {
+                if (!navigation || !navigation.canGoBack()) {
+                    return false;
+                } else {
+                    navigation.goBack();
+                    return true;
+                }
+            };
+
+            const subscription = BackHandler.addEventListener(
+                'hardwareBackPress',
+                onBackPress,
+            );
+
+            return () => subscription.remove();
+        }, [navigation]),
+    );
 
     React.useEffect(() => {
         TVEventControl.enableTVMenuKey();
@@ -160,24 +222,69 @@ export const SearchScreen = ({ navigation }: any) => {
             style={{
                 paddingVertical: hp(3),
                 paddingRight: wp(2),
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'black',
             }}>
-            <View className="w-full h-full flex-1 flex-row">
+            <View
+                className="w-full h-full flex-1 flex-row"
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    flex: 1,
+                    flexDirection: 'row',
+                }}>
                 <TVFocusGuideView
                     className="w-1/3 flex-row"
-                    style={{ padding: 30 }}
+                    style={{
+                        padding: 30,
+                        width: '33.33%',
+                        flexDirection: 'column',
+                    }}
                     autoFocus>
+                    {Platform.OS === 'android' ? (
+                        <TouchableOpacity
+                            style={{
+                                alignSelf: 'flex-start',
+                                transform: [{ scale: 0.4 }],
+                                left: -28,
+                            }}
+                            onPress={() => {
+                                if (navigation.canGoBack()) {
+                                    navigation.goBack();
+                                }
+                            }}>
+                            <SVGReturn />
+                        </TouchableOpacity>
+                    ) : (
+                        <></>
+                    )}
                     <View
                         className="relative w-11/12 rounded-xl flex-row bg-white items-center overflow-hidden"
                         style={{
                             height: hp(6),
                             padding: 10,
+                            width: '91.67%',
+                            borderRadius: 12,
+                            flexDirection: 'row',
+                            backgroundColor: 'white',
+                            alignItems: 'center',
+                            overflow: 'hidden',
                         }}>
                         <View
                             className="flex-1 absolute left-5 self-center z-1"
                             style={{
                                 zIndex: 1,
+                                flex: 1,
+                                position: 'absolute',
+                                left: 5,
+                                alignSelf: 'center',
                             }}>
-                            <SVGSearchBlack />
+                            <SVGSearchBlack
+                                width={Platform.OS === 'android' ? '24' : '40'}
+                                height={Platform.OS === 'android' ? '24' : '40'}
+                            />
                         </View>
                         <TextInput
                             value={search}
@@ -186,22 +293,31 @@ export const SearchScreen = ({ navigation }: any) => {
                             textAlign="center"
                             className="absolute w-full overflow-hidden bg-white text-black items-center justify-center z-0"
                             style={{
-                                fontSize: 32,
+                                fontSize: Platform.OS === 'android' ? 16 : 32,
                                 zIndex: 0,
+                                position: 'absolute',
+                                width: '100%',
+                                overflow: 'hidden',
+                                backgroundColor: 'white',
+                                color: 'black',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                             }}
                             placeholderTextColor="black"
                             placeholder="Search movie"
                         />
                     </View>
                 </TVFocusGuideView>
-                <View className="flex-1 flex-col">
+                <View
+                    className="flex-1 flex-col"
+                    style={{ flex: 1, flexDirection: 'column' }}>
                     <FlatList
                         ref={ref}
-                        data={films}
-                        renderItem={({ item }) => (
+                        data={[...films, ...blanks]}
+                        renderItem={({ item, index }) => (
                             <MovieItem
                                 film={item}
-                                key={item.id}
+                                key={item === 'blank' ? item.id : index}
                                 onClickPlayButton={onClickPlayButton}
                             />
                         )}

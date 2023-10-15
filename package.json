@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "private": true,
     "scripts": {
-        "android": "expo run:android",
+        "android": "react-native run-android",
         "ios": "expo run:ios",
         "tvos": "expo run:ios --scheme FatCoupleTV-tvOS --device \"Apple TV 4K (3rd generation)\"",
         "mytv": "expo run:ios --scheme FatCoupleTV-tvOS --device \"Séjour\"",

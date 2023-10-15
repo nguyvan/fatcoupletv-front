@@ -5,6 +5,7 @@ import {
     Image,
     TVFocusGuideView,
     FlatList,
+    Platform,
 } from 'react-native';
 import { hp, wp } from '../../utils/responsive';
 
@@ -47,7 +48,7 @@ const CardFilm = ({
             }}
             hasTVPreferredFocus={true}
             onFocus={handleFocusFilm}
-            activeOpacity={1.0}
+            activeOpacity={Platform.OS === 'android' ? 0.2 : 1}
             style={{
                 marginRight: isLastItem ? wp(3) : 0,
             }}>
@@ -76,7 +77,10 @@ const ListFilm = ({
     return (
         <TVFocusGuideView
             className="flex-1"
-            style={{ marginTop: hp(2) }}
+            style={[
+                { marginTop: hp(2) },
+                Platform.OS === 'android' ? { flex: 1 } : undefined,
+            ]}
             autoFocus>
             <FlatList
                 data={films}
@@ -92,11 +96,21 @@ const ListFilm = ({
                     />
                 )}
                 onEndReached={() => setOffset((offset: number) => offset + 1)}
-                className="bg-black/10 rounded-3xl"
-                style={{
-                    paddingHorizontal: wp(3),
-                    paddingVertical: hp(3),
-                }}
+                className={
+                    Platform.OS === 'android' ? '' : 'bg-black/10 rounded-3xl'
+                }
+                style={[
+                    {
+                        paddingHorizontal: wp(3),
+                        paddingVertical: hp(3),
+                    },
+                    Platform.OS === 'android'
+                        ? {
+                              backgroundColor: 'rgba(0,0,0,0.1)',
+                              borderRadius: 10,
+                          }
+                        : undefined,
+                ]}
                 contentContainerStyle={{
                     alignItems: 'center',
                     justifyContent: 'flex-start',

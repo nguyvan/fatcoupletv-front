@@ -13,9 +13,14 @@ import {
     TouchableOpacity,
     TVFocusGuideView,
     FlatList,
+    Platform,
+    ScrollView,
+    BackHandler,
 } from 'react-native';
 import { hp, wp } from '../utils/responsive';
 import { getSession } from '../apis/session.api';
+import { useFocusEffect } from '@react-navigation/native';
+import SVGReturn from '../assets/svg/SvgReturn';
 
 interface EpisodeCardProps {
     index: number;
@@ -44,12 +49,12 @@ const EpisodeCard = ({
                 magnification: 1.2,
             }}
             hasTVPreferredFocus={true}
-            activeOpacity={1}
+            activeOpacity={Platform.OS === 'android' ? 0.2 : 1}
             onPress={() => setPage(index)}>
             <Text
                 style={{
                     color: 'white',
-                    fontSize: 36,
+                    fontSize: Platform.OS === 'android' ? 20 : 36,
                     fontWeight: 'bold',
                 }}>
                 {index * 100 + 1} -{' '}
@@ -90,6 +95,29 @@ export const EpisodeSelectionScreen = ({
         }
     };
 
+    useFocusEffect(
+        React.useCallback(() => {
+            const onBackPress = () => {
+                if (!navigation || !navigation.canGoBack()) {
+                    return false;
+                } else {
+                    setModalVisibility(false);
+                    setFocusEp(-1);
+                    setPage(0);
+                    navigation.goBack();
+                    return true;
+                }
+            };
+
+            const subscription = BackHandler.addEventListener(
+                'hardwareBackPress',
+                onBackPress,
+            );
+
+            return () => subscription.remove();
+        }, [navigation]),
+    );
+
     React.useEffect(() => {
         TVEventControl.enableTVMenuKey();
         return () => {
@@ -120,7 +148,7 @@ export const EpisodeSelectionScreen = ({
             navigation.removeListener('blur', blur);
             navigation.removeListener('focus', focus);
         };
-    }, [navigation]);
+    }, [navigation, modalVisibility, focusEp]);
     return (
         <View className="flex-1 justify-center items-center bg-[#3C3737]">
             {currentEp ? (
@@ -140,20 +168,70 @@ export const EpisodeSelectionScreen = ({
             ) : (
                 <></>
             )}
-            {currentEp && modalVisibility && (
+            {currentEp && (
                 <Modal transparent={true} visible={modalVisibility}>
                     <View
-                        className="bg-black/30 flex-col justify-between items-center absolute bottom-0 left-0 right-0"
-                        style={{
-                            top: hp(40),
-                            paddingVertical: hp(2),
-                            paddingHorizontal: wp(5),
-                        }}>
-                        <Text className="text-6xl text-white font-bold">
+                        className={
+                            Platform.OS === 'android'
+                                ? ''
+                                : 'bg-black/30 flex-col justify-between items-center absolute bottom-0 left-0 right-0'
+                        }
+                        style={[
+                            {
+                                top: hp(40),
+                                paddingVertical: hp(2),
+                                paddingHorizontal: wp(5),
+                            },
+                            Platform.OS === 'android'
+                                ? {
+                                      backgroundColor: 'rgba(0,0,0,0.3)',
+                                      flexDirection: 'column',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      position: 'absolute',
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                  }
+                                : undefined,
+                        ]}>
+                        {Platform.OS === 'android' ? (
+                            <TouchableOpacity
+                                style={{
+                                    zIndex: 99,
+                                    alignSelf: 'flex-start',
+                                    position: 'absolute',
+                                    transform: [{ scale: 0.4 }],
+                                    left: 28,
+                                }}
+                                onPress={() => {
+                                    if (navigation.canGoBack()) {
+                                        setModalVisibility(false);
+                                        setFocusEp(-1);
+                                        setPage(0);
+                                        navigation.goBack();
+                                    }
+                                }}>
+                                <SVGReturn />
+                            </TouchableOpacity>
+                        ) : (
+                            <></>
+                        )}
+                        <Text
+                            className="text-6xl text-white font-bold"
+                            style={{
+                                fontSize: Platform.OS === 'android' ? 36 : 60,
+                            }}>
                             {currentEp.watchingFilm.name}
                         </Text>
-                        <View className="flex-row justify-start self-start">
-                            {[...Array(nbPages)].map((_, index) => (
+                        <FlatList
+                            contentContainerStyle={{
+                                justifyContent: 'flex-start',
+                                alignSelf: 'flex-start',
+                            }}
+                            horizontal={true}
+                            data={[...Array(nbPages)]}
+                            renderItem={({ item, index }) => (
                                 <EpisodeCard
                                     key={index}
                                     index={index}
@@ -162,15 +240,25 @@ export const EpisodeSelectionScreen = ({
                                     lastEp={currentEp.watchingFilm.nb_episodes}
                                     nbPages={nbPages}
                                 />
-                            ))}
-                        </View>
+                            )}
+                            style={{
+                                flexGrow: 0,
+                            }}
+                        />
                         <TVFocusGuideView
                             className="flex-1"
-                            style={{
-                                marginVertical: hp(2),
-                                height: hp(30),
-                                width: wp(100),
-                            }}
+                            style={[
+                                {
+                                    marginVertical: hp(2),
+                                    height: hp(30),
+                                    width: wp(100),
+                                },
+                                Platform.OS === 'android'
+                                    ? {
+                                          flex: 1,
+                                      }
+                                    : undefined,
+                            ]}
                             autoFocus>
                             <FlatList
                                 data={episodes}
@@ -224,10 +312,12 @@ export const EpisodeSelectionScreen = ({
                                         onFocus={() => {
                                             setFocusEp(index);
                                         }}
-                                        activeOpacity={1.0}
+                                        activeOpacity={
+                                            Platform.OS === 'android' ? 0.2 : 1
+                                        }
                                         style={{
-                                            width: wp(6.3),
-                                            height: hp(5),
+                                            flex: 0.1,
+                                            aspectRatio: 8 / 5,
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             borderRadius: 10,
@@ -237,7 +327,14 @@ export const EpisodeSelectionScreen = ({
                                                 index >= 90 ? hp(5) : 0,
                                             marginTop: index < 10 ? hp(2) : 0,
                                         }}>
-                                        <Text className="text-black text-3xl font-medium">
+                                        <Text
+                                            className="text-black text-3xl font-medium"
+                                            style={{
+                                                fontSize:
+                                                    Platform.OS === 'android'
+                                                        ? 16
+                                                        : 30,
+                                            }}>
                                             {page * 100 + index + 1}
                                         </Text>
                                     </TouchableOpacity>
